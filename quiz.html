@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster - Interactive Quiz Platform</title>
+    <style>
+        /* CSS Styling */
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #ec4899;
+            --bg-color: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--surface);
+            padding: 1rem 5%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .nav-links button {
+            background: transparent;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            margin-left: 1rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links button:hover {
+            color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-outline {
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            background: transparent;
+        }
+
+        /* Container & Views */
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards & Forms */
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .text-center { text-align: center; }
+        .mb-1 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 2rem; }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        /* Quiz Grid */
+        .quiz-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .quiz-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .quiz-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        /* Quiz Taking Interface */
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Create Quiz Interface */
+        .question-block {
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            background: #fafafa;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .options-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; /* Simplify nav on mobile for demo */ }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="brand" onclick="switchView('home')">QuizMaster</div>
+        <div class="nav-links" id="navLinks">
+            <button onclick="switchView('listing')">Browse Quizzes</button>
+            <button onclick="switchView('create')">Create Quiz</button>
+            <button class="btn btn-primary" id="authBtn" onclick="switchView('auth')">Login / Register</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- User Authentication View -->
+        <div id="auth" class="view card" style="max-width: 400px; margin: 4rem auto;">
+            <h2 class="text-center mb-2">Welcome Back</h2>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" class="form-control" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" class="form-control" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="mockLogin()">Sign In</button>
+            <p class="text-center" style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                Simulation only. Click sign in to continue.
+            </p>
+        </div>
+
+        <!-- Home Page View -->
+        <div id="home" class="view active text-center" style="margin-top: 4rem;">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem;">Create and Take <span style="color: var(--primary);">Quizzes</span></h1>
+            <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2rem;">Challenge yourself or test others with custom multiple-choice quizzes.</p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button class="btn btn-primary" style="font-size: 1.1rem;" onclick="switchView('listing')">Take a Quiz</button>
+                <button class="btn btn-outline" style="font-size: 1.1rem;" onclick="switchView('create')">Create a Quiz</button>
+            </div>
+        </div>
+
+        <!-- Quiz Listing View -->
+        <div id="listing" class="view">
+            <h2 class="mb-2">Available Quizzes</h2>
+            <div class="quiz-grid" id="quizGrid">
+                <!-- Quizzes injected here via JS -->
+            </div>
+        </div>
+
+        <!-- Quiz Creation View -->
+        <div id="create" class="view">
+            <div class="card">
+                <h2 class="mb-2">Create a New Quiz</h2>
+                <div class="form-group">
+                    <label>Quiz Title</label>
+                    <input type="text" id="quizTitle" class="form-control" placeholder="e.g., General Knowledge 2024">
+                </div>
+                
+                <div id="questionsContainer">
+                    <!-- Question Builder blocks go here -->
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                    <button class="btn btn-outline" onclick="addQuestionBlock()">+ Add Question</button>
+                    <button class="btn btn-primary" onclick="saveQuiz()">Save Quiz</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Taking View -->
+        <div id="take" class="view">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                    <h2 id="activeQuizTitle">Quiz Title</h2>
+                    <span id="questionProgress" style="font-weight: 600; color: var(--primary);">1 / 5</span>
+                </div>
+                
+                <div id="activeQuestionText" style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem;">
+                    Question text goes here?
+                </div>
+
+                <div id="activeOptions">
+                    <!-- Options injected here -->
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Results View -->
+        <div id="results" class="view card text-center">
+            <h1 style="font-size: 4rem; color: var(--primary); margin-bottom: 0.5rem;" id="scoreDisplay">0%</h1>
+            <h2 class="mb-1" id="scoreText">You scored X out of Y</h2>
+            
+            <div id="feedbackContainer" style="text-align: left; margin-top: 2rem;">
+                <!-- Detailed feedback injected here -->
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="switchView('listing')">Back to Quizzes</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentUser = null;
+        let quizzes = [
+            {
+                id: 1,
+                title: "Web Development Basics",
+                questions: [
+                    { text: "What does HTML stand for?", options: ["Hyper Text Markup Language", "High Tech Modern Language", "Hyperlink and Text Markup Language", "Home Tool Markup Language"], correct: 0 },
+                    { text: "Which property is used in CSS to change the background color?", options: ["color", "bgcolor", "background-color", "bg-color"], correct: 2 },
+                    { text: "Inside which HTML element do we put the JavaScript?", options: ["<js>", "<scripting>", "<javascript>", "<script>"], correct: 3 }
+                ]
+            }
+        ];
+        
+        let activeQuiz = null;
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let selectedOptionIndex = null;
+
+        // --- View Navigation ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+
+            if (viewId === 'listing') renderQuizList();
+            if (viewId === 'create' && document.getElementById('questionsContainer').children.length === 0) {
+                addQuestionBlock(); // Add one default empty question
+            }
+        }
+
+        // --- Mock Authentication ---
+        function mockLogin() {
+            currentUser = { name: "Demo User" };
+            document.getElementById('authBtn').textContent = "Logout";
+            document.getElementById('authBtn').onclick = () => {
+                currentUser = null;
+                document.getElementById('authBtn').textContent = "Login / Register";
+                document.getElementById('authBtn').onclick = () => switchView('auth');
+                switchView('home');
+            };
+            switchView('home');
+        }
+
+        // --- Quiz Listing ---
+        function renderQuizList() {
+            const grid = document.getElementById('quizGrid');
+            grid.innerHTML = '';
+            
+            if(quizzes.length === 0) {
+                grid.innerHTML = '<p>No quizzes available yet. Create one!</p>';
+                return;
+            }
+
+            quizzes.forEach(quiz => {
+                const card = document.createElement('div');
+                card.className = 'quiz-card';
+                card.innerHTML = `
+                    <h3 style="margin-bottom: 0.5rem; color: var(--primary);">${quiz.title}</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">${quiz.questions.length} Questions</p>
+                    <button class="btn btn-outline" style="width: 100%;" onclick="startQuiz(${quiz.id})">Take Quiz</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- Quiz Taking Logic ---
+        function startQuiz(quizId) {
+            activeQuiz = quizzes.find(q => q.id === quizId);
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            switchView('take');
+            renderCurrentQuestion();
+        }
+
+        function renderCurrentQuestion() {
+            const q = activeQuiz.questions[currentQuestionIndex];
+            document.getElementById('activeQuizTitle').textContent = activeQuiz.title;
+            document.getElementById('questionProgress').textContent = `${currentQuestionIndex + 1} / ${activeQuiz.questions.length}`;
+            document.getElementById('activeQuestionText').textContent = q.text;
+            
+            const optionsContainer = document.getElementById('activeOptions');
+            optionsContainer.innerHTML = '';
+            selectedOptionIndex = null;
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => selectOption(btn, idx);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('nextBtn').textContent = (currentQuestionIndex === activeQuiz.questions.length - 1) ? 'Submit Quiz' : 'Next Question';
+        }
+
+        function selectOption(btnElement, index) {
+            document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+            btnElement.classList.add('selected');
+            selectedOptionIndex = index;
+        }
+
+        function nextQuestion() {
+            if (selectedOptionIndex === null) {
+                alert("Please select an answer.");
+                return;
+            }
+            
+            userAnswers.push(selectedOptionIndex);
+            
+            if (currentQuestionIndex < activeQuiz.questions.length - 1) {
+                currentQuestionIndex++;
+                renderCurrentQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        // --- Quiz Results ---
+        function finishQuiz() {
+            let score = 0;
+            let feedbackHTML = '<h3 class="mb-1">Detailed Review:</h3>';
+
+            activeQuiz.questions.forEach((q, idx) => {
+                const isCorrect = userAnswers[idx] === q.correct;
+                if (isCorrect) score++;
+
+                feedbackHTML += `
+                    <div style="margin-bottom: 1rem; padding: 1rem; border-left: 4px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}; background: #fafafa;">
+                        <p style="font-weight: 600; margin-bottom: 0.5rem;">Q: ${q.text}</p>
+                        <p>Your answer: <span style="color: ${isCorrect ? 'var(--success)' : 'var(--danger)'}">${q.options[userAnswers[idx]]}</span></p>
+                        ${!isCorrect ? `<p>Correct answer: <span style="color: var(--success);">${q.options[q.correct]}</span></p>` : ''}
+                    </div>
+                `;
+            });
+
+            const percentage = Math.round((score / activeQuiz.questions.length) * 100);
+            
+            document.getElementById('scoreDisplay').textContent = `${percentage}%`;
+            document.getElementById('scoreText').textContent = `You scored ${score} out of ${activeQuiz.questions.length}`;
+            document.getElementById('feedbackContainer').innerHTML = feedbackHTML;
+            
+            switchView('results');
+        }
+
+        // --- Quiz Creation Logic ---
+        function addQuestionBlock() {
+            const container = document.getElementById('questionsContainer');
+            const index = container.children.length;
+            
+            const block = document.createElement('div');
+            block.className = 'question-block';
+            block.innerHTML = `
+                <div class="form-group">
+                    <label>Question ${index + 1}</label>
+                    <input type="text" class="form-control q-text" placeholder="Enter your question here">
+                </div>
+                <div class="options-grid form-group">
+                    <div>
+                        <label>Option 1</label>
+                        <input type="text" class="form-control q-opt" placeholder="Option 1">
+                    </div>
+                    <div>
+                        <label>Option 2</label>
+                        <input type="text" class="form-control q-opt" placeholder="Option 2">
+                    </div>
+                    <div>
+                        <label>Option 3</label>
+                        <input type="text" class="form-control q-opt" placeholder="Option 3">
+                    </div>
+                    <div>
+                        <label>Option 4</label>
+                        <input type="text" class="form-control q-opt" placeholder="Option 4">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Correct Answer</label>
+                    <select class="form-control q-correct">
+                        <option value="0">Option 1</option>
+                        <option value="1">Option 2</option>
+                        <option value="2">Option 3</option>
+                        <option value="3">Option 4</option>
+                    </select>
+                </div>
+            `;
+            container.appendChild(block);
+        }
+
+        function saveQuiz() {
+            const title = document.getElementById('quizTitle').value.trim();
+            if (!title) {
+                alert("Please enter a quiz title.");
+                return;
+            }
+
+            const questionBlocks = document.querySelectorAll('.question-block');
+            let newQuestions = [];
+            let isValid = true;
+
+            questionBlocks.forEach(block => {
+                const qText = block.querySelector('.q-text').value.trim();
+                const optInputs = block.querySelectorAll('.q-opt');
+                const correctIdx = parseInt(block.querySelector('.q-correct').value);
+                
+                const options = Array.from(optInputs).map(input => input.value.trim());
+                
+                if (!qText || options.some(opt => opt === "")) {
+                    isValid = false;
+                }
+
+                newQuestions.push({
+                    text: qText,
+                    options: options,
+                    correct: correctIdx
+                });
+            });
+
+            if (!isValid) {
+                alert("Please fill out all question texts and options.");
+                return;
+            }
+
+            const newQuiz = {
+                id: quizzes.length + 1,
+                title: title,
+                questions: newQuestions
+            };
+
+            quizzes.push(newQuiz);
+            
+            // Clean up form
+            document.getElementById('quizTitle').value = '';
+            document.getElementById('questionsContainer').innerHTML = '';
+            
+            alert("Quiz created successfully!");
+            switchView('listing');
+        }
+    </script>
+</body>
+</html>
